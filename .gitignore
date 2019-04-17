@@ -1,5 +1,11 @@
+# Dev files
+
+*dev.xls
+*dev.xlsx
+
 # PDI Process files 
 
-src/pdi/inputs/
-src/pdi/outputs/
-src/pdi/logs/
+src/inputs/
+src/outputs/new/
+src/outputs/updates/
+src/logs/
