@@ -3,9 +3,12 @@
 *dev.xls
 *dev.xlsx
 
-# PDI Process files 
+# Process files 
 
 src/inputs/
 src/outputs/new/
 src/outputs/updates/
 src/logs/
+
+# Python
+src/Python/__pycache__/
