@@ -35,6 +35,7 @@ def add(cnn, table_name):
 
         ### Removing duplicates    
         new_data.to_sql(table_name, cnn, if_exists='append', chunksize=1000, index = False)
+        print(new_data)
 
 
 #tables = ["soc_associations","con_countries","con_states","con_municipalities"]
