@@ -12,3 +12,5 @@ src/logs/
 
 # Python
 src/Python/__pycache__
+*.__pycache__
+*.pyc

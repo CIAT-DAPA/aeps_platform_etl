@@ -2,6 +2,13 @@ import conf as c
 import pandas as pd
 from os import listdir
 
+def trim_all_columns(df):
+    """
+    Trim whitespace from ends of each value across all series in dataframe
+    """
+    trim_strings = lambda x: x.strip() if type(x) is str else x
+    return df.applymap(trim_strings)
+
 ## Method to process file. It checks the raw data and split in many files according to tables that should be saved.
 ## It splits process in two folders: New folder is for new records and Updates folder is for records which exist into database
 ## (string) file: Path of file which will be processed
@@ -19,8 +26,12 @@ def process_file(file, cnn, table_name):
     # Loading data raw
     data_raw = pd.read_excel(file, sheet_name='Hoja 1')
 
+    # Filtering data duplicates
+    import_data = data_raw[form_tmp.form_field.values]
+    # Cleaning data with empty spaces
+    import_data = trim_all_columns(import_data)    
     # Removing duplicates
-    import_data = data_raw[form_tmp.form_field.values].drop_duplicates()
+    import_data = import_data.drop_duplicates(subset = keys.form_field.values, keep = 'first')
 
     # Getting values from database
     table = pd.read_sql_table(table_name, cnn)
@@ -36,7 +47,8 @@ def process_file(file, cnn, table_name):
     import_data = import_data.reset_index(drop=True)
 
     # Looking for records available into database
-    records = import_data.isin(table).values
+    records_available = import_data.isin(table)
+    records = records_available[records_available.columns.values[0]]
     records_new = import_data[records == False]
     records_update = import_data[records == True]    
 
@@ -52,9 +64,10 @@ def process_file(file, cnn, table_name):
 print("Translating process started")
 # Loading files with raw data
 path_data_files = listdir(c.path_inputs)
-tables = ["soc_associations","con_countries","con_states","con_municipalities"]
+tables = c.tables_master
 # Getting the form data
 form = pd.read_excel(c.path_form, sheet_name='header')
+
 # Getting database connection
 print("Connecting database")
 db_connection = c.connect_db()

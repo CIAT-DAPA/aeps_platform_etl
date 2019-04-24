@@ -58,6 +58,7 @@ def add(cnn, table_name):
             if(col != "id"):
                 new_data[col] = ""
 
+        print(new_data)
         # Saving into database
         new_data.to_sql(table_name, cnn, if_exists='append', chunksize=1000, index = False)
         
@@ -65,7 +66,7 @@ def add(cnn, table_name):
 print("Adding process started")
 # Loading files with raw data
 path_data_files = listdir(c.path_inputs)
-tables = ["soc_associations","con_countries","con_states","con_municipalities"]
+tables = c.tables_master
 # Getting the configurations
 dependencies = pd.read_excel(c.path_parameters, sheet_name='dependencies')
 additional = pd.read_excel(c.path_parameters, sheet_name='additional')
