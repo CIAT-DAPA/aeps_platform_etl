@@ -49,13 +49,13 @@ def process_file(file, cnn, table_name):
 
 
 
-print("Starting process")
+print("Translating process started")
 # Loading files with raw data
 path_data_files = listdir(c.path_inputs)
 tables = ["soc_associations","con_countries","con_states","con_municipalities"]
 # Getting the form data
 form = pd.read_excel(c.path_form, sheet_name='header')
-#
+# Getting database connection
 print("Connecting database")
 db_connection = c.connect_db()
 

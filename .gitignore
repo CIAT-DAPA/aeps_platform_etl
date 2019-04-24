@@ -11,4 +11,4 @@ src/outputs/updates/
 src/logs/
 
 # Python
-src/Python/__pycache__/
+src/Python/__pycache__
