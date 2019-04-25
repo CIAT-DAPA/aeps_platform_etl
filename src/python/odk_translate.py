@@ -46,6 +46,17 @@ def process_file(file, cnn, table_name):
     table = table.reset_index(drop=True)
     import_data = import_data.reset_index(drop=True)
 
+    # Applying transformations
+    transformations_tmp = transformations[transformations["table"] == table_name]
+    
+    ## Replace
+    trs_replace = transformations_tmp[transformations_tmp["type"] == "replace"]
+    if( trs_replace.shape[0] > 0 ):
+        for tmp_field in trs_replace.field.unique():
+            for row in trs_replace[trs_replace["field"] == tmp_field].itertuples(index=True, name='Pandas') :  
+                import_data[tmp_field] = import_data[tmp_field].str.replace('^' + getattr(row, "value") + '$',getattr(row, "transform"))
+
+
     # Looking for records available into database
     records_available = import_data.isin(table)
     records = records_available[records_available.columns.values[0]]
@@ -65,9 +76,9 @@ print("Translating process started")
 # Loading files with raw data
 path_data_files = listdir(c.path_inputs)
 tables = c.tables_master
-# Getting the form data
+# Getting the form structure
 form = pd.read_excel(c.path_form, sheet_name='header')
-
+transformations = pd.read_excel(c.path_form, sheet_name='transformations')
 # Getting database connection
 print("Connecting database")
 db_connection = c.connect_db()

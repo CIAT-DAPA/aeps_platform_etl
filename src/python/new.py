@@ -58,7 +58,6 @@ def add(cnn, table_name):
             if(col != "id"):
                 new_data[col] = ""
 
-        print(new_data)
         # Saving into database
         new_data.to_sql(table_name, cnn, if_exists='append', chunksize=1000, index = False)
         
