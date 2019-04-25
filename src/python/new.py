@@ -18,27 +18,27 @@ def add(cnn, table_name):
         table = pd.read_sql_table(table_name, cnn)
 
         # Loading data from file
-        new_data = pd.read_csv(c.path_ouputs_new + table_name + ".csv")
+        new_data = pd.read_csv(c.path_ouputs_new + table_name + ".csv", dtype=str)
 
         # Getting dependencies from configuration
         dependencies_tmp = dependencies[["table",table_name]]
         dependencies_tmp = dependencies_tmp[dependencies_tmp[table_name].notna()]
-
-        if(dependencies_tmp.shape[0] > 0):        
-            # Getting all records of parent table
-            parent = pd.read_sql_table(dependencies_tmp["table"].iloc[0], cnn)
-            # Getting only the fields for merging (id and ext_id)
-            parent = parent[["id","ext_id"]]            
-            # Mergin data
-            parent.ext_id = parent.ext_id.astype(str)
-            new_data[dependencies_tmp[table_name].iloc[0]] = new_data[dependencies_tmp[table_name].iloc[0]].astype(str)
-            new_data = pd.merge(left = new_data, right = parent, how = 'inner', left_on = dependencies_tmp[table_name].iloc[0], right_on = 'ext_id')
-            # Removing fields
-            fields = new_data.columns.isin(["ext_id_y",dependencies_tmp[table_name].iloc[0]])
-            fields = new_data.columns[fields == False]
-            new_data = new_data[fields]
-            # Replacing the columns names
-            new_data.columns = new_data.columns.str.replace('^ext_id_x$','ext_id').str.replace('^id$',dependencies_tmp[table_name].iloc[0])
+        if(dependencies_tmp.shape[0] > 0):
+            for d in dependencies_tmp.itertuples(index=True, name='Pandas'):
+                # Getting all records of parent table
+                parent = pd.read_sql_table(getattr(d, "table"), cnn)
+                # Fields related: 0 = field in the current table, 1 = Extern field for getting the foreign value. it used to compare the values between tables
+                fields_related = getattr(d, table_name).split("-")                
+                parent = parent[["id",fields_related[1]]]                            
+                parent[fields_related[1]] = parent[fields_related[1]].astype(str)
+                new_data[fields_related[0]] = new_data[fields_related[0]].astype(str)
+                # Mergin data
+                new_data = new_data.set_index(fields_related[0]).join(parent.set_index(fields_related[1])).reset_index()
+                if("index" in new_data.columns):
+                    new_data.drop("index", axis=1, inplace=True)
+                if(fields_related[0] in new_data.columns):
+                    new_data.drop(fields_related[0], axis=1, inplace=True)
+                new_data.columns = new_data.columns.str.replace('^id$',fields_related[0])
         
         # Getting addtional from configuration
         additional_tmp = additional[additional["table"] == table_name ]
