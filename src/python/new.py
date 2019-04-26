@@ -48,7 +48,7 @@ def add(cnn, table_name):
             now = datetime.datetime.now()        
             new_data['created'] = now
             new_data['updated'] = now        
-        if(additional_tmp.shape[0] > 0 and additional_tmp.iloc[0]["has_enable"] == 0):
+        if(additional_tmp.shape[0] > 0 and additional_tmp.iloc[0]["has_enable"] == 1):
             new_data['enable'] = 1
             
         # Filling empty data

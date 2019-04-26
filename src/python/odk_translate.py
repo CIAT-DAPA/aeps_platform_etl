@@ -1,25 +1,42 @@
 import conf as c
 import pandas as pd
+import os
 from os import listdir
 
+## Method whichTrim whitespace from ends of each value across all series in dataframe
+## (dataframe) df: Dataframe for cleaning
 def trim_all_columns(df):
-    """
-    Trim whitespace from ends of each value across all series in dataframe
-    """
     trim_strings = lambda x: x.strip() if type(x) is str else x
     return df.applymap(trim_strings)
 
+def save(df, keys, path):
+    if(df.shape[0] > 0):
+        if (os.path.isfile(path)) :
+            old =  pd.read_csv(path, dtype=str)
+            df = pd.concat([df,old])
+
+        # Removing duplicates
+        df = df.drop_duplicates(subset = keys, keep = 'last')
+        df.to_csv(path, index = False)
+
+
 ## Method to process file. It checks the raw data and split in many files according to tables that should be saved.
 ## It splits process in two folders: New folder is for new records and Updates folder is for records which exist into database
+## (int) process: Number the process to check
 ## (string) file: Path of file which will be processed
 ## (object) cnn: Database connection
 ## (string) table_name: Name of table into database
-def process_file(file, cnn, table_name):
+def process_file(process, file, cnn, table_name):
     
     # Getting the fields from 
     form_fields = ["form_sheet","form_field","form_key","mandatory",table_name]
-    form_tmp = form[form_fields]
-    form_tmp = form_tmp[form_tmp[table_name].notna()]    
+    f = form[form["process"] == process]
+    form_tmp = f[form_fields]
+    form_tmp = form_tmp[form_tmp[table_name].notna()] 
+    
+    # It does not have configuration
+    if (form_tmp.shape[0] == 0):
+        return { 'new' : 0, 'updates': 0  }
     # Getting the keys from form    
     keys = form_tmp[form_tmp.form_key == 1]
 
@@ -83,15 +100,15 @@ def process_file(file, cnn, table_name):
     records_update = import_data[records == True]    
 
     # Saving records
-    if(records_new.shape[0] > 0):
-        records_new.to_csv(c.path_ouputs_new + table_name + ".csv", index = False)
-    if(records_update.shape[0] > 0):
-        records_update.to_csv(c.path_ouputs_updates + table_name + ".csv", index = False)
-    print("\tNew records: " + str(records_new.shape[0]) + " Updates: " + str(records_update.shape[0]))
+    save(records_new, keys[table_name].values, c.path_ouputs_new + table_name + ".csv")
+    save(records_update, keys[table_name].values, c.path_ouputs_updates + table_name + ".csv")
+    return { 'new' : records_new.shape[0], 'updates': records_update.shape[0]  }
+    
 
 
 
 print("Translating process started")
+process_list = [1,2]
 # Loading files with raw data
 path_data_files = listdir(c.path_inputs)
 tables = c.tables_master
@@ -102,12 +119,15 @@ transformations = pd.read_excel(c.path_form, sheet_name='transformations')
 print("Connecting database")
 db_connection = c.connect_db()
 
-for f in path_data_files:
+for p in process_list:
+    print("Process: " + str(p))
+    for f in path_data_files:
 
-    print("Processing: " + f)
+        print("\tFiles: " + f)
 
-    for t in tables:
+        for t in tables:
 
-        print("\tTable: " + t)        
-        # Processing files
-        process_file(c.path_inputs + f, db_connection,  t)
+            print("\t\tTable: " + t)        
+            # Processing files
+            result = process_file(p, c.path_inputs + f, db_connection,  t)
+            print("\t\t\tNew records: " + str(result['new']) + " Updates: " + str(result['updates']))
