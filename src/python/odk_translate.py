@@ -17,7 +17,7 @@ def trim_all_columns(df):
 def process_file(file, cnn, table_name):
     
     # Getting the fields from 
-    form_fields = ["form_sheet","form_field","form_key",table_name]
+    form_fields = ["form_sheet","form_field","form_key","mandatory",table_name]
     form_tmp = form[form_fields]
     form_tmp = form_tmp[form_tmp[table_name].notna()]    
     # Getting the keys from form    
@@ -25,13 +25,32 @@ def process_file(file, cnn, table_name):
 
     # Loading data raw
     data_raw = pd.read_excel(file, sheet_name='Hoja 1')
+    
+    # Cleaning data with empty spaces
+    data_raw = trim_all_columns(data_raw)
+
+    # Checking mandatory fields    
+    mandatory_tmp = form_tmp[form_tmp.mandatory == 1]
+    log = data_raw
+    log["ERROR"] = ""
+    for mdt in mandatory_tmp.itertuples(index=True, name='Pandas') :
+        missing_values =  data_raw[getattr(mdt, "form_field")].isna()
+        if (missing_values[missing_values].shape[0] == 0):
+            missing_values =  data_raw[getattr(mdt, "form_field")].astype(str) == ""
+        log.loc[missing_values, "ERROR"] = log.loc[missing_values, "ERROR"] + " Empty field: " + getattr(mdt, table_name) + " : " + getattr(mdt, "form_field") + ","
+        
+    log_error = log["ERROR"] != ""
+    if(log[log_error].shape[0] > 0):
+        log[log_error].to_csv(c.path_logs + "mandatory-" + table_name + ".csv", index = False)
+    
+    # Getting the data raw without issues
+    data_raw = data_raw[log_error == False]
 
     # Filtering data duplicates
     import_data = data_raw[form_tmp.form_field.values]
-    # Cleaning data with empty spaces
-    import_data = trim_all_columns(import_data)    
+        
     # Removing duplicates
-    import_data = import_data.drop_duplicates(subset = keys.form_field.values, keep = 'first')
+    import_data = import_data.drop_duplicates(subset = keys.form_field.values, keep = 'last')
 
     # Getting values from database
     table = pd.read_sql_table(table_name, cnn)
