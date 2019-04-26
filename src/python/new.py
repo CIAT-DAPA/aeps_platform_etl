@@ -44,11 +44,11 @@ def add(cnn, table_name):
         additional_tmp = additional[additional["table"] == table_name ]
         
         # Adding extra information
-        if(additional_tmp.shape[0] > 0 and additional_tmp.iloc[0]["register_date"] == "yes"):
+        if(additional_tmp.shape[0] > 0 and additional_tmp.iloc[0]["register_date"] == 1):
             now = datetime.datetime.now()        
             new_data['created'] = now
             new_data['updated'] = now        
-        if(additional_tmp.shape[0] > 0 and additional_tmp.iloc[0]["has_enable"] == "yes"):
+        if(additional_tmp.shape[0] > 0 and additional_tmp.iloc[0]["has_enable"] == 0):
             new_data['enable'] = 1
             
         # Filling empty data
