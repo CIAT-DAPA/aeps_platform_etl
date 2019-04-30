@@ -90,7 +90,13 @@ def process_file(process, file, cnn, table_name):
     if( trs_replace.shape[0] > 0 ):
         for tmp_field in trs_replace.field.unique():
             for row in trs_replace[trs_replace["field"] == tmp_field].itertuples(index=True, name='Pandas') :  
-                import_data[tmp_field] = import_data[tmp_field].str.replace('^' + getattr(row, "value") + '$',getattr(row, "transform"))
+                import_data[tmp_field] = import_data[tmp_field].str.replace('^' + getattr(row, "value") + '$',getattr(row, "transform"))    
+    ## Split
+    trs_replace = transformations_tmp[transformations_tmp["type"] == "split"]
+    if( trs_replace.shape[0] > 0 ):
+        for tmp_field in trs_replace.field.unique():
+            for row in trs_replace[trs_replace["field"] == tmp_field].itertuples(index=True, name='Pandas') :
+                import_data[[getattr(row, "field"),getattr(row, "transform")]] = import_data[getattr(row, "field")].str.split(getattr(row, "value"),expand=True)
 
 
     # Looking for records available into database
