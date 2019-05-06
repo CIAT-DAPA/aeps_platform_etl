@@ -95,7 +95,7 @@ def save(df, keys, path):
 def process_file(process, file, cnn, table_name):
     
     # Getting the fields from 
-    form_fields = ["form_sheet","form_field","form_key",table_name]
+    form_fields = ["form_field","form_key",table_name]
     f = form[form["process"] == process]
     form_tmp = f[form_fields]
     form_tmp = form_tmp[form_tmp[table_name].notna()] 
@@ -107,13 +107,12 @@ def process_file(process, file, cnn, table_name):
     keys = form_tmp[form_tmp.form_key == 1]
 
     # Loading data raw
-    data_raw = pd.read_excel(file, sheet_name='Hoja 1')
+    form_sheet = setup[setup.table == table_name].iloc[0][1]
+    data_raw = pd.read_excel(file, sheet_name = form_sheet)
     
     # Cleaning data with empty spaces
     print("\t\t\tCleaning data")
     data_raw = trim_all_columns(data_raw)
-
-    # Validating
 
     # Removing duplicates
     print("\t\t\tRemoving duplicates")
@@ -124,7 +123,7 @@ def process_file(process, file, cnn, table_name):
     print("\t\t\tComparing with data of the database")
     table = pd.read_sql_table(table_name, cnn)
     # Ordering datasets    
-    import_data = import_data.sort_values(by=keys['form_field'].values.tolist())
+    import_data = import_data.sort_values(by=keys['form_field'].drop_duplicates().values.tolist())
     table = table.sort_values(by=keys[table_name].values.tolist())
     table = table[keys[table_name].values]
 
@@ -162,6 +161,7 @@ process_list = [1,2]
 path_data_files = listdir(c.path_inputs)
 tables = c.tables_master
 # Getting the form structure
+setup = pd.read_excel(c.path_form, sheet_name='setup') 
 form = pd.read_excel(c.path_form, sheet_name='header')
 transformations = pd.read_excel(c.path_form, sheet_name='transformations')
 validations = pd.read_excel(c.path_form, sheet_name='validations')
