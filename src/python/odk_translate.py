@@ -33,6 +33,12 @@ def apply_transformations(rules, table_name, data):
         for tmp_field in trs_replace.field.unique():
             for row in trs_replace[trs_replace["field"] == tmp_field].itertuples(index=True, name='Pandas') :
                 tmp_data[[getattr(row, "field"),getattr(row, "transform")]] = tmp_data[getattr(row, "field")].str.split(getattr(row, "value"),expand=True)
+    
+    ## Add
+    trs_add = transformations_tmp[transformations_tmp["type"] == "add"]
+    if( trs_add.shape[0] > 0 ):
+        for tmp_field in trs_add.field.unique():
+            tmp_data[getattr(row, "field")] = getattr(row, "value")
 
     return data
 
