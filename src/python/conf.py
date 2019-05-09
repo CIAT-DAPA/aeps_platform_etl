@@ -17,7 +17,7 @@ path_ouputs_updates = path_ouputs + "updates\\"
 path_logs = path_root + "logs\\"
 
 ## Process
-tables_master = ["con_countries","con_states","con_municipalities","soc_associations","soc_people","soc_technical_assistants","far_farms","far_plots"]
+tables_master = ["con_countries_1","con_countries_2","con_states_1","con_states_2","con_municipalities_1","con_municipalities_2","soc_associations","soc_people_1","soc_people_2","soc_technical_assistants","far_farms","far_plots", "far_production_events"]
 
 ## Load Configurations
 parameters = pd.read_excel(path_parameters, sheet_name='global')
