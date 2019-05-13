@@ -11,7 +11,7 @@ import numpy as np
 ## (string) file: Path of file which will be processed
 ## (object) cnn: Database connection
 ## (string) table_name: Name of table into database
-def process_file(file, cnn, table_name):
+def process_form(file, cnn, table_name):
     
     # Getting the fields from 
     form_fields = ["form_sheet","form_field","form_key",table_name]
@@ -67,7 +67,7 @@ def process_file(file, cnn, table_name):
 
     # Validations
     print("\t\t\tValidating data")
-    import_data = tr.get_validations(validations, table_name_real, import_data)
+    import_data = tr.get_validations(validations, table_name_real, import_data, False)
 
     # Comparing with data of the database
     print("\t\t\tComparing with data of the database")    
@@ -92,6 +92,58 @@ def process_file(file, cnn, table_name):
     tr.save(records_new, keys[table_name].values, c.path_ouputs_new + table_name_real + ".csv")
     tr.save(records_update, keys[table_name].values, c.path_ouputs_updates + table_name_real + ".csv")
     return { 'new' : records_new.shape[0], 'updates': records_update.shape[0]  }
+
+##
+def process_survey(file, cnn):
+    print("\t\t\tStarting")
+    # Getting blocks of questions
+    blocks = survey[["block","repeat"]].drop_duplicates()    
+    # Getting data 
+    sheet_main = "aeps_production_event-plot"
+    #plot = pd.read_excel(file, sheet_name = sheet_main)
+    constant_name = True
+    answers = pd.DataFrame(columns=["event","raw_value","validated","fixed_value","question", "type"])
+    for b in blocks.itertuples(index=True, name='Pandas') :
+        print("\t\t\tBlock: " + getattr(b, "block") + " repeat: " + str(getattr(b, "repeat")))        
+        questions = survey[survey.block == getattr(b, "block")][["id","question","type"]].drop_duplicates()
+        questions["full_name"] = questions.question
+        if(constant_name):
+            q_rows = ((questions.question != "KEY") & (questions.question != "PARENT_KEY"))
+            questions.loc[q_rows,"full_name"] = sheet_main + "-" + getattr(b, "block") + "-" + questions.loc[q_rows, "question"]
+        
+        # THis section is to know if we should search in the main sheet or others sheets
+        if(getattr(b, "repeat") == 0):
+            sheet_name = sheet_main
+            data_raw = pd.read_excel(file, sheet_name = sheet_name)
+            key_field = "KEY"
+        elif(getattr(b, "repeat") == 1):
+            sheet_name = sheet_main + "-" + getattr(b, "block")[:4]
+            data_raw = pd.read_excel(file, sheet_name = sheet_name)
+            key_field = "PARENT_KEY"
+
+        data_raw = data_raw[questions["full_name"].values]
+        
+        # Transformations
+        #print("\t\t\tTransforming data")
+        #data_raw = tr.apply_transformations(transformations, table_name_real, data_raw)
+
+        # Validations
+        print("\t\t\t\tValidating data")
+        for q in questions.itertuples(index=True, name='Pandas') :
+            if getattr(q, "id") != 0:
+                print("\t\t\t\t\t" + getattr(q, "question"))
+                data_a = data_raw[[key_field,getattr(q, "full_name")]]
+                data_a = tr.get_validations(validations, "survey", data_a, True)
+                data_a["validated"] = data_a["ERROR"] == ""
+                data_a["fixed"] = data_a[[getattr(q, "full_name")]]
+                data_a.drop('ERROR', axis=1, inplace=True)
+                data_a = data_a[[key_field,getattr(q, "full_name"),"validated","fixed"]]
+                data_a["question"] = getattr(q, "id")
+                data_a["type"] = getattr(q, "type")                
+                data_a.columns = ["event","raw_value","validated","fixed_value","question", "type"]
+                answers = answers.append(data_a)
+    
+    answers.to_csv(c.path_ouputs_new + "far_answers.csv", index = False)
     
 print("Translating process started")
 # Loading files with raw data
@@ -101,6 +153,8 @@ tables = c.tables_master
 form = pd.read_excel(c.path_form, sheet_name='form')
 transformations = pd.read_excel(c.path_form, sheet_name='transformations')
 validations = pd.read_excel(c.path_form, sheet_name='validations')
+survey = pd.read_excel(c.path_form, sheet_name='survey')
+survey_sheet = "aeps_production_event-plot"
 # Getting database connection
 print("Connecting database")
 db_connection = c.connect_db()
@@ -108,9 +162,15 @@ db_connection = c.connect_db()
 # Getting inputs files
 for f in path_data_files:
     print("\tFile: " + f)
+    
     # Processing tables
     for t in tables:
         print("\t\tTable: " + t)        
         # Processing files
-        result = process_file(c.path_inputs + f, db_connection,  t)
-        print("\t\t\tNew records: " + str(result['new']) + " Updates: " + str(result['updates']))
+        result_form = process_form(c.path_inputs + f, db_connection,  t)
+        print("\t\t\tNew records: " + str(result_form['new']) + " Updates: " + str(result_form['updates']))
+    
+    # Processing survey
+    print("\t\tSurvey")
+    result_survey = process_survey(c.path_inputs + f, db_connection)
+    #print("\t\t\tNew records: " + str(result_survey['new']) + " Updates: " + str(result_survey['updates']))
