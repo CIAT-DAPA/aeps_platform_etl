@@ -12,32 +12,47 @@ def trim_all_columns(df):
 ## (dataframe) rules: Table, which has the rules to be applied to dataset
 ## (string) table_name: Name of table 
 ## (dataframe) data: Dataset which will get the transformations
-def apply_transformations(rules, table_name, data):
+def apply_transformations_form(rules, table_name, data):
     tmp_data = data
 
     # Getting rules
     transformations_tmp = rules[rules["table"] == table_name]
-    
-    ## Replace
-    trs_replace = transformations_tmp[transformations_tmp["type"] == "replace"]
-    if( trs_replace.shape[0] > 0 ):
-        for tmp_field in trs_replace.field.unique():
-            for row in trs_replace[trs_replace["field"] == tmp_field].itertuples(index=True, name='Pandas') :  
-                tmp_data[tmp_field] = tmp_data[tmp_field].str.replace('^' + getattr(row, "value") + '$',getattr(row, "transform"))    
-    ## Split
-    trs_replace = transformations_tmp[transformations_tmp["type"] == "split"]
-    if( trs_replace.shape[0] > 0 ):
-        for tmp_field in trs_replace.field.unique():
-            for row in trs_replace[trs_replace["field"] == tmp_field].itertuples(index=True, name='Pandas') :
-                tmp_data[[getattr(row, "field"),getattr(row, "transform")]] = tmp_data[getattr(row, "field")].str.split(getattr(row, "value"),expand=True)
-    
-    ## Add
-    trs_add = transformations_tmp[transformations_tmp["type"] == "add"]
-    if( trs_add.shape[0] > 0 ):
-        for tmp_field in trs_add.field.unique():
-            for row in trs_add[trs_add["field"] == tmp_field].itertuples(index=True, name='Pandas') :
-                tmp_data[getattr(row, "field")] = getattr(row, "transform")
 
+    if( transformations_tmp.shape[0] > 0 ):
+        for tmp_field in transformations_tmp.field.unique():
+            for row in transformations_tmp[transformations_tmp["field"] == tmp_field].itertuples(index=True, name='Pandas') :  
+                # Form
+                if(getattr(row, "type") == "replace"):
+                    tmp_data[tmp_field] = tmp_data[tmp_field].str.replace('^' + getattr(row, "value") + '$',getattr(row, "transform"))
+                elif (getattr(row, "type") == "split"):
+                    tmp_data[[getattr(row, "field"),getattr(row, "transform")]] = tmp_data[getattr(row, "field")].str.split(getattr(row, "value"),expand=True)
+                elif (getattr(row, "type") == "add"):
+                    tmp_data[getattr(row, "field")] = getattr(row, "transform")
+    return data           
+
+## Method which apply rules for transforming data into new dataset
+## (dataframe) rules: Table, which has the rules to be applied to dataset
+## (string) table_name: Name of table 
+## (dataframe) data: Dataset which will get the transformations
+def apply_transformations_survey(rules, data, field, full_data):
+    tmp_data = data
+
+    # Getting rules
+    transformations_tmp = rules[rules["table"] == "survey"]
+
+    if( transformations_tmp.shape[0] > 0 ):
+        for tmp_field in transformations_tmp.field.unique():
+            for row in transformations_tmp[transformations_tmp["field"] == tmp_field].itertuples(index=True, name='Pandas') :                 
+                if(field == getattr(row, "field")):
+                    if (getattr(row, "type") == "unit"):
+                        field_units = full_data.columns.str.contains(getattr(row, "transform"))
+                        col = str(full_data.columns[field_units == True].values[0])
+                        tmp_data["raw_units"] = full_data[col]
+                    elif (getattr(row, "type") == "multiply"):
+                        if(getattr(row, "condition") == "unit"):
+                            records = tmp_data.raw_units == getattr(row, "value")
+                            tmp_data.loc[records,"fixed_value"] = tmp_data.loc[records,"raw_value"] * getattr(row, "transform")
+                            tmp_data.loc[records,"fixed_units"] = getattr(row, "units")
     return data
 
 ## Method which validates that fields are in good shape
@@ -81,8 +96,11 @@ def get_validations(rules, table_name, data, error):
         log.drop('ERROR', axis=1, inplace=True)
     return log
 
-
-def save(df, keys, path):
+##
+## (dataframe) df: Data which will be saved
+## (Serie) keys: All key fields 
+## (string) path: File name
+def save_form(df, keys, path):
     if(df.shape[0] > 0):
         if (os.path.isfile(path)) :
             old =  pd.read_csv(path, dtype=str)
@@ -90,4 +108,12 @@ def save(df, keys, path):
 
         # Removing duplicates
         df = df.drop_duplicates(subset = keys, keep = 'last')
+        df.to_csv(path, index = False)
+
+##
+## (dataframe) df: Data which will be saved
+## (string) path: File name
+def save_survey(df, path):
+    df.drop('type', axis=1, inplace=True)
+    if(df.shape[0] > 0):
         df.to_csv(path, index = False)

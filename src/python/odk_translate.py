@@ -63,7 +63,7 @@ def process_form(file, cnn, table_name):
 
     # Transformations
     print("\t\t\tTransforming data")
-    import_data = tr.apply_transformations(transformations, table_name_real, import_data)
+    import_data = tr.apply_transformations_form(transformations, table_name_real, import_data)
 
     # Validations
     print("\t\t\tValidating data")
@@ -89,8 +89,8 @@ def process_form(file, cnn, table_name):
 
     # Saving records
     print("\t\t\tSaving")
-    tr.save(records_new, keys[table_name].values, c.path_ouputs_new + table_name_real + ".csv")
-    tr.save(records_update, keys[table_name].values, c.path_ouputs_updates + table_name_real + ".csv")
+    tr.save_form(records_new, keys[table_name].values, c.path_ouputs_new + table_name_real + ".csv")
+    tr.save_form(records_update, keys[table_name].values, c.path_ouputs_updates + table_name_real + ".csv")
     return { 'new' : records_new.shape[0], 'updates': records_update.shape[0]  }
 
 ##
@@ -102,7 +102,7 @@ def process_survey(file, cnn):
     sheet_main = "aeps_production_event-plot"
     #plot = pd.read_excel(file, sheet_name = sheet_main)
     constant_name = True
-    answers = pd.DataFrame(columns=["event","raw_value","validated","fixed_value","question", "type"])
+    answers = pd.DataFrame(columns=["event","raw_value","question", "type","fixed_value","raw_units","fixed_units","validated"])
     for b in blocks.itertuples(index=True, name='Pandas') :
         print("\t\t\tBlock: " + getattr(b, "block") + " repeat: " + str(getattr(b, "repeat")))        
         questions = survey[survey.block == getattr(b, "block")][["id","question","type"]].drop_duplicates()
@@ -122,27 +122,35 @@ def process_survey(file, cnn):
             key_field = "PARENT_KEY"
 
         data_raw = data_raw[questions["full_name"].values]
-        
-        # Transformations
-        #print("\t\t\tTransforming data")
-        #data_raw = tr.apply_transformations(transformations, table_name_real, data_raw)
-
-        # Validations
-        print("\t\t\t\tValidating data")
+                
+        #print("\t\t\t\tQuestion")
         for q in questions.itertuples(index=True, name='Pandas') :
             if getattr(q, "id") != 0:
-                print("\t\t\t\t\t" + getattr(q, "question"))
+                print("\t\t\t\t" + getattr(q, "question"))
                 data_a = data_raw[[key_field,getattr(q, "full_name")]]
-                data_a = tr.get_validations(validations, "survey", data_a, True)
-                data_a["validated"] = data_a["ERROR"] == ""
-                data_a["fixed"] = data_a[[getattr(q, "full_name")]]
-                data_a.drop('ERROR', axis=1, inplace=True)
-                data_a = data_a[[key_field,getattr(q, "full_name"),"validated","fixed"]]
+                data_a.columns = ["event","raw_value"]
                 data_a["question"] = getattr(q, "id")
                 data_a["type"] = getattr(q, "type")                
-                data_a.columns = ["event","raw_value","validated","fixed_value","question", "type"]
+                data_a["fixed_value"] = data_a["raw_value"]
+                data_a["raw_units"] = ""
+                data_a["fixed_units"] = ""
+                # Transforming
+                data_a = tr.apply_transformations_survey(transformations, data_a, getattr(q, "question"), data_raw)
+                # Validating
+                data_a = tr.get_validations(validations, "survey", data_a, True)
+                data_a["validated"] = data_a["ERROR"] == ""
+                
+                data_a.drop('ERROR', axis=1, inplace=True)
+                #data_a = data_a[[key_field,getattr(q, "full_name"),"validated","fixed"]]                
+                data_a.columns = ["event","raw_value","question", "type","fixed_value","raw_units","fixed_units","validated"]
                 answers = answers.append(data_a)
-    
+        
+    tr.save_survey(answers[((answers.type == "int") | (answers.type == "double"))], c.path_ouputs_new + "far_responses_numeric.csv") 
+    tr.save_survey(answers[((answers.type == "date") | (answers.type == "time") | (answers.type == "datetime"))], c.path_ouputs_new + "far_responses_date.csv")
+    tr.save_survey(answers[answers.type == "bool"], c.path_ouputs_new + "far_responses_bool.csv")
+    tr.save_survey(answers[((answers.type == "unique") | (answers.type == "multiple"))], c.path_ouputs_new + "far_responses_options.csv")
+    tr.save_survey(answers[((answers.type != "int") & (answers.type != "double") & (answers.type != "date") & (answers.type != "time") & (answers.type != "datetime") & (answers.type != "bool") & (answers.type != "unique") & (answers.type != "multiple"))],c.path_ouputs_new + "far_responses_text.csv")    
+    answers.drop('type', axis=1, inplace=True)
     answers.to_csv(c.path_ouputs_new + "far_answers.csv", index = False)
     
 print("Translating process started")
