@@ -5,7 +5,7 @@ import datetime
 import os
 import re
 
-## Method to process file
+## Method which save the file into the database
 ## (string) file: Path of data raw
 ## (object) cnn: Database connection
 ## (dataframe) form: Form configuration
@@ -58,6 +58,8 @@ def add(cnn, table_name):
             if(col != "id"):
                 new_data[col] = ""
 
+        
+
         # Saving into database
         new_data.to_sql(table_name, cnn, if_exists='append', chunksize=1000, index = False)
         
@@ -65,7 +67,8 @@ def add(cnn, table_name):
 print("Adding process started")
 # Loading files with raw data
 path_data_files = listdir(c.path_inputs)
-tables = c.tables_master
+tables = ["con_countries","con_states","con_municipalities","soc_associations","soc_people","soc_technical_assistants","far_farms","far_plots", "far_production_events"]
+surveys = ["far_responses_bool","far_responses_date","far_responses_numeric","far_responses_options","far_responses_text"]
 # Getting the configurations
 dependencies = pd.read_excel(c.path_parameters, sheet_name='dependencies')
 additional = pd.read_excel(c.path_parameters, sheet_name='additional')
@@ -77,5 +80,11 @@ for t in tables:
     print("\tTable: " + t)
     ## Processing files
     add(db_connection, t)
+
+for s in surveys:
+    print("\tTable: " + t)
+    ## Processing files
+    add(db_connection, t)
+
 
         

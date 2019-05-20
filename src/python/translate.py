@@ -85,7 +85,7 @@ def get_validations(rules, table_name, data, error):
             # Without condition
             if(getattr(row, "condition") == "" or pd.isnull(getattr(row, "condition"))):
                 missing_values =  log[getattr(row, "field")].astype(str).str.contains(getattr(row, "expression"), case = True, na=False, regex=True)
-                log.loc[missing_values, "ERROR"] = log.loc[missing_values, "ERROR"] + getattr(row, "message") + ", "
+                log.loc[missing_values == False, "ERROR"] = log.loc[missing_values == False, "ERROR"] + getattr(row, "message") + ", "
 
     # Saving log of issues
     log_error = log["ERROR"] != ""
@@ -121,7 +121,9 @@ def save_form(df, keys, path):
             df = pd.concat([df,old], sort = False)
 
         # Removing duplicates
+        df = df.astype(str)
         df = df.drop_duplicates(subset = keys, keep = 'last')
+        #df.drop_duplicates(df.index[0], inplace = True)
         df.to_csv(path, index = False)
 
 ## Method that save surveys into a file
