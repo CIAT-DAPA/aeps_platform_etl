@@ -14,7 +14,7 @@ path_inputs = path_root + "inputs\\"
 path_ouputs = path_root + "outputs\\"
 path_ouputs_new = path_ouputs + "new\\"
 path_ouputs_updates = path_ouputs + "updates\\"
-path_logs = path_root + "logs\\"
+path_logs = path_ouputs + "logs\\"
 
 ## Process
 tables_master = ["con_countries_1","con_countries_2","con_states_1","con_states_2","con_municipalities_1","con_municipalities_2","soc_associations","soc_people_1","soc_people_2","soc_technical_assistants","far_farms","far_plots", "far_production_events"]

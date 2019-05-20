@@ -5,6 +5,7 @@ import os
 from os import listdir
 import re
 import numpy as np
+import datetime
 
 ## Method to process file. It checks the raw data and split in many files according to tables that should be saved.
 ## It splits process in two folders: New folder is for new records and Updates folder is for records which exist into database
@@ -97,7 +98,7 @@ def process_form(file, cnn, table_name):
 def process_survey(file, cnn):
     print("\t\t\tStarting")
     # Getting blocks of questions
-    blocks = survey[["block","repeat"]].drop_duplicates()    
+    blocks = survey[["block","repeat"]].drop_duplicates()
     # Getting data 
     sheet_main = "aeps_production_event-plot"
     #plot = pd.read_excel(file, sheet_name = sheet_main)
@@ -122,7 +123,8 @@ def process_survey(file, cnn):
             key_field = "PARENT_KEY"
 
         data_raw = data_raw[questions["full_name"].values]
-                
+        data_raw = tr.trim_all_columns(data_raw)
+
         #print("\t\t\t\tQuestion")
         for q in questions.itertuples(index=True, name='Pandas') :
             if getattr(q, "id") != 0:
@@ -141,15 +143,22 @@ def process_survey(file, cnn):
                 data_a["validated"] = data_a["ERROR"] == ""
                 
                 data_a.drop('ERROR', axis=1, inplace=True)
-                #data_a = data_a[[key_field,getattr(q, "full_name"),"validated","fixed"]]                
                 data_a.columns = ["event","raw_value","question", "type","fixed_value","raw_units","fixed_units","validated"]
                 answers = answers.append(data_a)
         
     tr.save_survey(answers[((answers.type == "int") | (answers.type == "double"))], c.path_ouputs_new + "far_responses_numeric.csv") 
-    tr.save_survey(answers[((answers.type == "date") | (answers.type == "time") | (answers.type == "datetime"))], c.path_ouputs_new + "far_responses_date.csv")
+
+    answer_date = answers[((answers.type == "date") | (answers.type == "time") | (answers.type == "datetime"))]
+    answer_date_mv =  answer_date["raw_value"].isna()
+    if (answer_date[answer_date_mv].shape[0] == 0):
+        answer_date_mv =  answer_date["raw_value"].astype(str) == ""
+    answer_date.loc[answer_date_mv == False,"raw_value"] = answer_date.loc[answer_date_mv == False,"raw_value"].apply(tr.xldate_to_datetime)
+    answer_date.loc[answer_date_mv == False,"fixed_value"] = answer_date.loc[answer_date_mv == False,"fixed_value"].apply(tr.xldate_to_datetime)
+    tr.save_survey(answer_date, c.path_ouputs_new + "far_responses_date.csv")
+    
     tr.save_survey(answers[answers.type == "bool"], c.path_ouputs_new + "far_responses_bool.csv")
     tr.save_survey(answers[((answers.type == "unique") | (answers.type == "multiple"))], c.path_ouputs_new + "far_responses_options.csv")
-    tr.save_survey(answers[((answers.type != "int") & (answers.type != "double") & (answers.type != "date") & (answers.type != "time") & (answers.type != "datetime") & (answers.type != "bool") & (answers.type != "unique") & (answers.type != "multiple"))],c.path_ouputs_new + "far_responses_text.csv")    
+    tr.save_survey(answers[((answers.type != "int") & (answers.type != "double") & (answers.type != "date") & (answers.type != "time") & (answers.type != "datetime") & (answers.type != "bool") & (answers.type != "unique") & (answers.type != "multiple"))],c.path_ouputs_new + "far_responses_text.csv")
     answers.drop('type', axis=1, inplace=True)
     answers.to_csv(c.path_ouputs_new + "far_answers.csv", index = False)
     
@@ -173,7 +182,7 @@ for f in path_data_files:
     
     # Processing tables
     for t in tables:
-        print("\t\tTable: " + t)        
+        print("\t\tTable: " + t)
         # Processing files
         result_form = process_form(c.path_inputs + f, db_connection,  t)
         print("\t\t\tNew records: " + str(result_form['new']) + " Updates: " + str(result_form['updates']))

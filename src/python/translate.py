@@ -1,6 +1,7 @@
 import pandas as pd
 import os
 import conf as c
+import datetime
 
 ## Method which Trim whitespace from ends of each value across all series in dataframe
 ## (dataframe) df: Dataframe for cleaning
@@ -96,7 +97,20 @@ def get_validations(rules, table_name, data, error):
         log.drop('ERROR', axis=1, inplace=True)
     return log
 
-##
+## Method that transform numeric dates (excel) in normal dates
+## (string) xldate: Date in format numeric
+def xldate_to_datetime(xldate):
+    
+    if(xldate == ""):
+        return ""
+
+    temp = datetime.datetime(1900, 1, 1)
+    delta = datetime.timedelta(days=xldate)
+    final = temp+delta
+    return final.strftime("%Y-%m-%d %H:%M:%S")
+
+
+## Method that save forms into a file
 ## (dataframe) df: Data which will be saved
 ## (Serie) keys: All key fields 
 ## (string) path: File name
@@ -110,7 +124,7 @@ def save_form(df, keys, path):
         df = df.drop_duplicates(subset = keys, keep = 'last')
         df.to_csv(path, index = False)
 
-##
+## Method that save surveys into a file
 ## (dataframe) df: Data which will be saved
 ## (string) path: File name
 def save_survey(df, path):

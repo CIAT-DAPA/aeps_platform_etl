@@ -8,7 +8,7 @@
 src/inputs/
 src/outputs/new/
 src/outputs/updates/
-src/logs/
+src/outputs/logs/
 
 # Python
 src/Python/__pycache__
