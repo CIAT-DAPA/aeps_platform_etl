@@ -138,12 +138,21 @@ def process_survey(file, cnn):
                 data_a["fixed_units"] = ""
                 # Transforming
                 data_a = tr.apply_transformations_survey(transformations, data_a, getattr(q, "question"), data_raw)
+                # Searching
+                if(getattr(q, "type")=="unique" or getattr(q, "type")=="multiple"):
+                    table_options = pd.read_sql_table("frm_options", cnn)
+                    table_options = table_options.loc[table_options.question == getattr(q, "id"),["id","name"]]
+                    data_a = pd.merge(data_a, table_options, left_on = "raw_value",right_on="name",how='inner') #data_a.set_index("raw_value").join(table_options.set_index("name")).reset_index()
+                    data_a["fixed_value"] = data_a["id"]
+                    data_a.drop('id', axis=1, inplace=True)
+                    data_a.drop('name', axis=1, inplace=True)
+
                 # Validating
                 data_a = tr.get_validations(validations, "survey", data_a, True)
                 data_a["validated"] = data_a["ERROR"] == ""
                 
                 data_a.drop('ERROR', axis=1, inplace=True)
-                data_a.columns = ["event","raw_value","question", "type","fixed_value","raw_units","fixed_units","validated"]
+                data_a.columns = ["event","raw_value","question", "type","fixed_value","raw_units","fixed_units","validated"]                                
                 answers = answers.append(data_a)
         
     tr.save_survey(answers[((answers.type == "int") | (answers.type == "double"))], c.path_ouputs_new + "far_responses_numeric.csv", "numeric") 

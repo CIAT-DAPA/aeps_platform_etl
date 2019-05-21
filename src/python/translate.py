@@ -141,6 +141,11 @@ def save_survey(df, path, type):
         df.loc[df_mv == False,"raw_value"] = df.loc[df_mv == False,"raw_value"].apply(xldate_to_datetime)
         df.loc[df_mv == False,"fixed_value"] = df.loc[df_mv == False,"fixed_value"].apply(xldate_to_datetime)
 
+    if(type == "options"):
+        df.columns = df.columns.str.replace('^raw_value$',"value")                
+        df.columns = df.columns.str.replace('^fixed_value$',"option")                
+        df.drop('validated', axis=1, inplace=True)    
+
     df.drop('type', axis=1, inplace=True)
     if(df.shape[0] > 0):
         df.to_csv(path, index = False)
