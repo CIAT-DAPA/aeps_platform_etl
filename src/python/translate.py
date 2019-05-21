@@ -129,7 +129,18 @@ def save_form(df, keys, path):
 ## Method that save surveys into a file
 ## (dataframe) df: Data which will be saved
 ## (string) path: File name
-def save_survey(df, path):
+def save_survey(df, path, type):    
+    if(type != "numeric"):
+        df.drop('raw_units', axis=1, inplace=True)
+        df.drop('fixed_units', axis=1, inplace=True)    
+
+    if(type == "date"):        
+        df_mv =  df["raw_value"].isna()
+        if (df_mv[df_mv].shape[0] == 0):
+            df_mv =  df["raw_value"].astype(str) == ""
+        df.loc[df_mv == False,"raw_value"] = df.loc[df_mv == False,"raw_value"].apply(xldate_to_datetime)
+        df.loc[df_mv == False,"fixed_value"] = df.loc[df_mv == False,"fixed_value"].apply(xldate_to_datetime)
+
     df.drop('type', axis=1, inplace=True)
     if(df.shape[0] > 0):
         df.to_csv(path, index = False)

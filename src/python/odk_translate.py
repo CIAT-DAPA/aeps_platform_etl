@@ -146,19 +146,11 @@ def process_survey(file, cnn):
                 data_a.columns = ["event","raw_value","question", "type","fixed_value","raw_units","fixed_units","validated"]
                 answers = answers.append(data_a)
         
-    tr.save_survey(answers[((answers.type == "int") | (answers.type == "double"))], c.path_ouputs_new + "far_responses_numeric.csv") 
-
-    answer_date = answers[((answers.type == "date") | (answers.type == "time") | (answers.type == "datetime"))]
-    answer_date_mv =  answer_date["raw_value"].isna()
-    if (answer_date[answer_date_mv].shape[0] == 0):
-        answer_date_mv =  answer_date["raw_value"].astype(str) == ""
-    answer_date.loc[answer_date_mv == False,"raw_value"] = answer_date.loc[answer_date_mv == False,"raw_value"].apply(tr.xldate_to_datetime)
-    answer_date.loc[answer_date_mv == False,"fixed_value"] = answer_date.loc[answer_date_mv == False,"fixed_value"].apply(tr.xldate_to_datetime)
-    tr.save_survey(answer_date, c.path_ouputs_new + "far_responses_date.csv")
-    
-    tr.save_survey(answers[answers.type == "bool"], c.path_ouputs_new + "far_responses_bool.csv")
-    tr.save_survey(answers[((answers.type == "unique") | (answers.type == "multiple"))], c.path_ouputs_new + "far_responses_options.csv")
-    tr.save_survey(answers[((answers.type != "int") & (answers.type != "double") & (answers.type != "date") & (answers.type != "time") & (answers.type != "datetime") & (answers.type != "bool") & (answers.type != "unique") & (answers.type != "multiple"))],c.path_ouputs_new + "far_responses_text.csv")
+    tr.save_survey(answers[((answers.type == "int") | (answers.type == "double"))], c.path_ouputs_new + "far_responses_numeric.csv", "numeric") 
+    tr.save_survey(answers[((answers.type == "date") | (answers.type == "time") | (answers.type == "datetime"))], c.path_ouputs_new + "far_responses_date.csv", "date")    
+    tr.save_survey(answers[answers.type == "bool"], c.path_ouputs_new + "far_responses_bool.csv", "bool")
+    tr.save_survey(answers[((answers.type == "unique") | (answers.type == "multiple"))], c.path_ouputs_new + "far_responses_options.csv", "options")
+    tr.save_survey(answers[((answers.type != "int") & (answers.type != "double") & (answers.type != "date") & (answers.type != "time") & (answers.type != "datetime") & (answers.type != "bool") & (answers.type != "unique") & (answers.type != "multiple"))],c.path_ouputs_new + "far_responses_text.csv", "text")
     answers.drop('type', axis=1, inplace=True)
     answers.to_csv(c.path_ouputs_new + "far_answers.csv", index = False)
     

@@ -31,16 +31,18 @@ def add(cnn, table_name):
                 fields_related = getattr(d, table_name).split("-")                
                 parent = parent[["id",fields_related[1]]]                            
                 parent[fields_related[1]] = parent[fields_related[1]].astype(str)
+                parent["id"] = parent["id"].astype(str)
                 new_data[fields_related[0]] = new_data[fields_related[0]].astype(str)
                 # Mergin data
-                new_data = new_data.set_index(fields_related[0]).join(parent.set_index(fields_related[1])).reset_index()
+                new_data = new_data.set_index(fields_related[0]).join(parent.set_index(fields_related[1])).reset_index()                
                 if("index" in new_data.columns):
                     new_data.drop("index", axis=1, inplace=True)
                 if(fields_related[0] in new_data.columns):
-                    new_data.drop(fields_related[0], axis=1, inplace=True)
-                new_data.columns = new_data.columns.str.replace('^id$',fields_related[0])
+                    new_data.drop(fields_related[0], axis=1, inplace=True)                
+                new_data.columns = new_data.columns.str.replace('^id$',fields_related[0])                
                 # Missing values
                 missing = new_data[fields_related[0]].isna()
+                new_data[fields_related[0]] = new_data[fields_related[0]].astype(str)
                 # Saving log of issues
                 log = new_data[missing]
                 log["ERROR"] = table_name + ":" + fields_related[1] + " Missing parent"
