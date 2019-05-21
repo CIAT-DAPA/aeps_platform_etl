@@ -39,6 +39,14 @@ def add(cnn, table_name):
                 if(fields_related[0] in new_data.columns):
                     new_data.drop(fields_related[0], axis=1, inplace=True)
                 new_data.columns = new_data.columns.str.replace('^id$',fields_related[0])
+                # Missing values
+                missing = new_data[fields_related[0]].isna()
+                # Saving log of issues
+                log = new_data[missing]
+                log["ERROR"] = table_name + ":" + fields_related[1] + " Missing parent"
+                if(log.shape[0] > 0):
+                    log.to_csv(c.path_logs + "new-" + table_name + ".csv", index = False) 
+                new_data = new_data[missing==False]
         
         # Getting addtional from configuration
         additional_tmp = additional[additional["table"] == table_name ]
@@ -82,9 +90,9 @@ for t in tables:
     add(db_connection, t)
 
 for s in surveys:
-    print("\tTable: " + t)
+    print("\tTable: " + s)
     ## Processing files
-    add(db_connection, t)
+    add(db_connection, s)
 
 
         
