@@ -36,4 +36,5 @@ def connect_db():
     pwd = get_parameter('database_pwd')
     schema = get_parameter('database_schema')
     db_url = "mysql+mysqldb://" + user + ":" + pwd + "@" + host + ":" + port + "/" + schema
+    #return create_engine(db_url, echo=True)
     return create_engine(db_url)

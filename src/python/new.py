@@ -67,10 +67,9 @@ def add(cnn, table_name):
         for col in columns_new.values:
             if(col != "id"):
                 new_data[col] = ""
-
         
-
         # Saving into database
+        #new_data.to_csv(c.path_logs + "new-debug-" + table_name + ".csv", index = False) 
         new_data.to_sql(table_name, cnn, if_exists='append', chunksize=1000, index = False)
         
 
@@ -87,12 +86,12 @@ print("Connecting database")
 db_connection = c.connect_db()
 
 for t in tables:
-    print("\tTable: " + t)
+    print("\tForm - Table: " + t)
     ## Processing files
     add(db_connection, t)
 
 for s in surveys:
-    print("\tTable: " + s)
+    print("\tSurvey - Table: " + s)
     ## Processing files
     add(db_connection, s)
 

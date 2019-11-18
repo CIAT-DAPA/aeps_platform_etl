@@ -148,8 +148,9 @@ def process_survey(file, cnn):
                     data_a.drop('name', axis=1, inplace=True)
 
                 # Validating
-                data_a = tr.get_validations(validations, "survey", data_a, True)
-                data_a["validated"] = data_a["ERROR"] == ""
+                data_a = tr.get_validations(validations, "survey", data_a, True)                
+                data_a["validated"] = 0
+                data_a.loc[data_a["ERROR"] == "","validated"] = 1
                 
                 data_a.drop('ERROR', axis=1, inplace=True)
                 data_a.columns = ["event","raw_value","question", "type","fixed_value","raw_units","fixed_units","validated"]                                
@@ -172,7 +173,7 @@ form = pd.read_excel(c.path_form, sheet_name='form')
 transformations = pd.read_excel(c.path_form, sheet_name='transformations')
 validations = pd.read_excel(c.path_form, sheet_name='validations')
 survey = pd.read_excel(c.path_form, sheet_name='survey')
-survey_sheet = "aeps_production_event-plot"
+#survey_sheet = "aeps_production_event-plot"
 # Getting database connection
 print("Connecting database")
 db_connection = c.connect_db()
