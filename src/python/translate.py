@@ -121,8 +121,14 @@ def save_form(df, keys, path):
             df = pd.concat([df,old], sort = False)
 
         # Removing duplicates
-        df = df.astype(str)
+        df = df.astype(str)        
+        print("\t\t\t\tKeys")
+        if(keys.size > 1):
+            keys = keys[range(0,2)]
+
+        print(keys)
         df = df.drop_duplicates(subset = keys, keep = 'last')
+        
         #df.drop_duplicates(df.index[0], inplace = True)
         df.to_csv(path, index = False)
 
