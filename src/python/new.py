@@ -21,31 +21,36 @@ def add(cnn, table_name):
         new_data = pd.read_csv(c.path_ouputs_new + table_name + ".csv", dtype=str)
 
         # Getting dependencies from configuration
-        dependencies_tmp = dependencies[["table",table_name]]
-        dependencies_tmp = dependencies_tmp[dependencies_tmp[table_name].notna()]
+        dependencies_tmp = dependencies[dependencies["child_table"] == table_name]
         if(dependencies_tmp.shape[0] > 0):
             for d in dependencies_tmp.itertuples(index=True, name='Pandas'):
                 # Getting all records of parent table
-                parent = pd.read_sql_table(getattr(d, "table"), cnn)
-                # Fields related: 0 = field in the current table, 1 = Extern field for getting the foreign value. it used to compare the values between tables
-                fields_related = getattr(d, table_name).split("-")                
-                parent = parent[["id",fields_related[1]]]                            
-                parent[fields_related[1]] = parent[fields_related[1]].astype(str)
+                parent = pd.read_sql_table(getattr(d, "parent_table"), cnn)                                
+                field_child = getattr(d, "child_field")
+                field_parent = getattr(d, "parent_field")
+                # Getting just two fields from parent
+                parent = parent[["id",field_parent]]                            
+                parent[field_parent] = parent[field_parent].astype(str)
                 parent["id"] = parent["id"].astype(str)
-                new_data[fields_related[0]] = new_data[fields_related[0]].astype(str)
+                new_data[field_child] = new_data[field_child].astype(str)
                 # Mergin data
-                new_data = new_data.set_index(fields_related[0]).join(parent.set_index(fields_related[1])).reset_index()                
+                #new_data.to_csv(c.path_logs + "debug-" + table_name + "-" + getattr(d, "parent_table") + "-before.csv", index = False)
+                #parent.to_csv(c.path_logs + "debug-" + table_name + "-" + getattr(d, "parent_table") + "-before-parent.csv", index = False)
+                new_data = new_data.set_index(field_child).join(parent.set_index(field_parent)).reset_index()                         
+                #new_data.to_csv(c.path_logs + "debug-" + table_name + "-" + getattr(d, "parent_table") + "-mergin.csv", index = False)       
                 if("index" in new_data.columns):
                     new_data.drop("index", axis=1, inplace=True)
-                if(fields_related[0] in new_data.columns):
-                    new_data.drop(fields_related[0], axis=1, inplace=True)                
-                new_data.columns = new_data.columns.str.replace('^id$',fields_related[0])                
+                if(field_child in new_data.columns):
+                    new_data.drop(field_child, axis=1, inplace=True)       
+                # Replacing the name of column id by the child field name         
+                new_data.columns = new_data.columns.str.replace('^id$',field_child)                
+                #new_data.to_csv(c.path_logs + "debug-" + table_name + "-" + getattr(d, "parent_table") +"-after.csv", index = False)
                 # Missing values
-                missing = new_data[fields_related[0]].isna()
-                new_data[fields_related[0]] = new_data[fields_related[0]].astype(str)
+                missing = new_data[field_child].isna()
+                new_data[field_child] = new_data[field_child].astype(str)
                 # Saving log of issues
                 log = new_data[missing]
-                log["ERROR"] = table_name + ":" + fields_related[1] + " Missing parent"
+                log["ERROR"] = table_name + ":" +field_parent + " Missing parent"
                 if(log.shape[0] > 0):
                     log.to_csv(c.path_logs + "new-" + table_name + ".csv", index = False) 
                 new_data = new_data[missing==False]

@@ -6,6 +6,8 @@ from os import listdir
 import re
 import numpy as np
 import datetime
+import shutil
+
 
 ## Method to process file. It checks the raw data and split in many files according to tables that should be saved.
 ## It splits process in two folders: New folder is for new records and Updates folder is for records which exist into database
@@ -17,8 +19,7 @@ def process_form(file, cnn, table_name):
     # Getting the fields from 
     form_fields = ["form_sheet","form_field","form_key",table_name]
     form_tmp = form[form_fields]
-    form_tmp = form_tmp[form_tmp[table_name].notna()] 
-    
+    form_tmp = form_tmp[form_tmp[table_name].notna()]     
     # It does not have configuration
     if (form_tmp.shape[0] == 0):
         return { 'new' : 0, 'updates': 0  }
@@ -124,8 +125,7 @@ def process_survey(file, cnn):
 
         data_raw = data_raw[questions["full_name"].values]
         data_raw = tr.trim_all_columns(data_raw)
-
-        #print("\t\t\t\tQuestion")
+        
         for q in questions.itertuples(index=True, name='Pandas') :
             if getattr(q, "id") != 0:
                 print("\t\t\t\t" + getattr(q, "question"))
@@ -163,7 +163,12 @@ def process_survey(file, cnn):
     tr.save_survey(answers[((answers.type != "int") & (answers.type != "double") & (answers.type != "date") & (answers.type != "time") & (answers.type != "datetime") & (answers.type != "bool") & (answers.type != "unique") & (answers.type != "multiple"))],c.path_ouputs_new + "far_responses_text.csv", "text")
     answers.drop('type', axis=1, inplace=True)
     answers.to_csv(c.path_ouputs_new + "far_answers.csv", index = False)
-    
+
+print("Clearing folders")
+#for folder in [c.path_ouputs_new, c.path_ouputs_updates, c.path_logs]:
+#    shutil.rmtree(folder)
+#    os.mkdir(folder)
+
 print("Translating process started")
 # Loading files with raw data
 path_data_files = listdir(c.path_inputs)
