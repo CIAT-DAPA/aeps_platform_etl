@@ -5,8 +5,8 @@ import pymysql.cursors
 # Global 
 
 ## Variables
-env = ".dev"
-path_root = "G:\\CIAT\\Code\\BigData\\aeps_platform_etl\\src\\"
+env = ""
+path_root = "D:\\AEPS 2.0 Boyaca\\aeps_platform_etl\\src\\"
 path_conf = "configurations\\"
 path_form = path_root + path_conf + "form" + env + ".xlsx"
 path_parameters = path_root + path_conf + "configuration" + env + ".xlsx"
